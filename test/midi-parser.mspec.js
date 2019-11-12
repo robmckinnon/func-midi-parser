@@ -260,13 +260,13 @@ describe('midiParser', () => {
 
 							subtype.should.equal('key_signature');
 							sf.should.equal(0);
-							expect(mi).to.be.undefined;
+							mi.should.equal(0);
 						});
 
 						it('should have a marker event', () => {
 							const {
 								subtype,
-								marker	
+								marker
 							} = midiTrack.events[2];
 
 							subtype.should.equal('marker');
