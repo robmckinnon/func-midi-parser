@@ -356,6 +356,113 @@ describe('midiParser', () => {
 		});
 	});
 
+	describe('parsing valid midi with key signature and MIDI port', () => {
+
+		before((done) => {
+			fs.readFile(__dirname + '/sounds/MIDIKeySignature.mid', (err, data) => {
+				if (err) throw new Error(err);
+
+				midiData = new Uint8Array(data);
+				done();
+			});
+		});
+
+		describe('construction', () => {
+
+			it('should not throw an error starting with a valid Midi file', function () {
+				midiParser.parse(cloneArray(midiData));
+				expect(() => midiParser.parse(cloneArray(midiData)) ).not.throw(Error);
+			});
+
+			describe('default construction', () => {
+
+				let midi;
+
+				beforeEach(() => midi = midiParser.parse(cloneArray(midiData)) );
+
+				afterEach(() => midi = null );
+
+				it('should have a valid number of tracks', () => {
+					midi.tracks.length.should.equal(midi.header.trackCount);
+				});
+
+				it('should have a valid time division', () => {
+					midi.header.timeDivision.should.equal(480);
+				});
+
+				it('should have a valid number of frames per second', () => {
+					midi.header.isFramesPerSecond.should.be.true;
+				});
+
+				describe('MidiTrack', () => {
+					let midiTrack;
+
+					describe('Tempo', () => {
+
+						beforeEach(() => midiTrack = midi.tracks[0] );
+
+						afterEach(() => midiTrack = null );
+
+						it('should have 11 events', () => {
+							midiTrack.events.length.should.equal(11);
+						});
+
+						it('should have a time signature event', () => {
+							const {
+								subtype,
+								timeSignature: {
+									numerator,
+									denominator,
+									metronomeClicksPerTick,
+									thirtySecondNotesPerBeat
+								}
+							} = midiTrack.events[0];
+
+							subtype.should.equal('time_signature');
+							numerator.should.equal(6);
+							denominator.should.equal(8);
+							metronomeClicksPerTick.should.equal(24);
+							thirtySecondNotesPerBeat.should.equal(8);
+						});
+
+						it('should have a key signature event', () => {
+							const {
+								subtype,
+								sf,
+								mi
+							} = midiTrack.events[1];
+
+							subtype.should.equal('key_signature');
+							sf.should.equal(-4);
+							mi.should.equal(0);
+						});
+
+						it('should have a tempo event', () => {
+							const {
+								subtype,
+								microsecPerQn
+							} = midiTrack.events[2];
+							subtype.should.equal('tempo');
+							microsecPerQn.should.equal(600000);
+						});
+
+						it('should have a midi port event', () => {
+							const {
+								subtype,
+								port
+							} = midiTrack.events[9];
+							subtype.should.equal('midi_port');
+							port.should.equal(0);
+						});
+						it('should have an end event', () => {
+							midiTrack.events[10].subtype.should.equal('end');
+						});
+					});
+				});
+			});
+		});
+	});
+
 	describe('parsing real song', () => {
 		let midi;
 
